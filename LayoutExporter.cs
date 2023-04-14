@@ -6,18 +6,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.Entities;
 using UnityEngine;
 
-namespace LayoutExport
+namespace KitchenMyMod
 {
-    public static class LayoutExportHelper : StartOfDaySystem, IModSystem
+    public class LayoutExporter : RestaurantSystem, IModSystem
     {
+        protected struct SExportRequest : IComponentData, IModComponent { }
+
+        private static LayoutExporter _instance;
+
         static string wallPacking = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
-        static void LogVector(Vector3 vector)
-        {
-            // x is x, y floor to ceiling, z is "vertical" in the restaurant
-            Debug.Log($"({vector.x},{vector.y},{vector.z})");
-        }
 
         //map Planner's appliance code to GDO ID
         public static Dictionary<int, string> applianceMap = new (string, int)[]{
@@ -135,7 +135,13 @@ namespace LayoutExport
             ("96", 1836107598),
             ("96", 369884364),
             ("jC", 976574457),
-  }.ToDictionary(a => a.Item2, a => a.Item1);
+        }.ToDictionary(a => a.Item2, a => a.Item1);
+
+        protected override void Initialise()
+        {
+            base.Initialise();
+            _instance = this;
+        }
 
         public static void AppendToFile(string line)
         {
@@ -146,12 +152,25 @@ namespace LayoutExport
 
         protected override void OnUpdate()
         {
-            throw new NotImplementedException();
+            if (TryGetSingletonEntity<SExportRequest>(out Entity e))
+            {
+                Mod.LogInfo("Exporting...");
+                Export();
+                EntityManager.DestroyEntity(e);
+            }
         }
 
-        internal string LayoutExport()
+        public static void RequestExport()
         {
-            KitchenMyMod.Mod.LogInfo("Start of export");
+            if (GameInfo.CurrentScene == SceneType.Kitchen)
+            {
+                _instance?.GetOrCreate<SExportRequest>();
+                Mod.LogInfo("RequestExport");
+            }
+        }
+
+        protected string Export()
+        {
             var bounds = base.Bounds;
             LogVector(bounds.min);
             LogVector(bounds.max);
@@ -217,8 +236,7 @@ namespace LayoutExport
                             horizontalWallString.Add(0b11);
 
                         }
-                        else
-if (CanReach(position, down))
+                        else if (CanReach(position, down))
                         {
                             // can target into the next room, must be a half wall
                             // or maybe a door............? Don't know how to tell
@@ -237,7 +255,6 @@ if (CanReach(position, down))
                 wallCodes = wallCodes.Concat(horizontalWallString);
 
             }
-            KitchenMyMod.Mod.LogInfo("wallCodes finished");
             string wallString = "";
             int piece = 0;
             int accumulator = 0;
@@ -258,17 +275,21 @@ if (CanReach(position, down))
                 piece = 0;
                 accumulator = 0;
             }
-            KitchenMyMod.Mod.LogInfo("For loop finished");
             layoutString += applianceString;
             layoutString += " ";
             layoutString += wallString;
-            KitchenMyMod.Mod.LogInfo("Layout string finished: " + layoutString);
             string compressed = LZString.CompressToEncodedURIComponent(layoutString);
             //System.Diagnostics.Process.Start($"https://plateupplanner.github.io/workspace#{layoutString}");
             System.Diagnostics.Process.Start($"https://plateupplanner.github.io/workspace#{compressed}");
             this.Enabled = false;
             Debug.Log(layoutString);
             return layoutString;
+        }
+
+        static void LogVector(Vector3 vector)
+        {
+            // x is x, y floor to ceiling, z is "vertical" in the restaurant
+            Debug.Log($"({vector.x},{vector.y},{vector.z})");
         }
     }
 

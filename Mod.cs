@@ -1,7 +1,5 @@
 ﻿using KitchenLib;
-using KitchenLib.Event;
 using KitchenMods;
-using LayoutExport;
 using PreferenceSystem;
 using System;
 using System.Reflection;
@@ -64,9 +62,9 @@ namespace KitchenMyMod
             PrefManager
                 .AddLabel("Planner Integration")
                 .AddButton("Export current layout", delegate (int _)
-             {
-                LayoutExportHelper.LayoutExport();
-             });
+                {
+                    LayoutExporter.RequestExport();
+                });
 
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
         }
