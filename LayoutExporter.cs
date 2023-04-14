@@ -71,7 +71,7 @@ namespace KitchenMyMod
             ("JD", -1068749602),
             ("yi", -905438738),
             ("FG", 1807525572),
-            ("uW", 269523389),
+            ("uW", 269523389), //meat
             ("dG", -1573812073),
             ("Dc", 759552160),
             ("Ar", -452101383),
@@ -186,15 +186,41 @@ namespace KitchenMyMod
                 List<int> horizontalWallString = new List<int>();
                 for (float j = bounds.min.x; j <= bounds.max.x; j++)
                 {
-                    var position = new Vector3 { x = j, z = i };
+                    var layoutPosition = new Vector3 { x = j, z = i };
                     // add appliance or empty square to appliance string
-                    var applianceEntity = base.GetPrimaryOccupant(position);
+                    var applianceEntity = base.GetPrimaryOccupant(layoutPosition);
                     CAppliance appliance;
+                    CPosition position;
                     string applianceCode;
                     if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && applianceMap.ContainsKey(appliance.ID))
                     {
                         // TODO get appliance rotation
-                        applianceCode = applianceMap[appliance.ID] + "u";
+                        if (EntityManager.RequireComponent<CPosition>(applianceEntity, out position))
+                        {
+                            string rotation;
+                            switch (position.Rotation.ToOrientation().ToString())
+                            {
+                                default:
+                                    rotation = "u";
+                                    break;
+                                case "Right":
+                                    rotation = "r";
+                                    break;
+                                case "Left":
+                                    rotation = "l";
+                                    break;
+                                case "Down":
+                                    rotation = "d";
+                                    break;
+                            }
+                            applianceCode = applianceMap[appliance.ID] + rotation;
+                        } else
+                        {
+                            applianceCode = applianceMap[appliance.ID] + "u";
+                        }
+                        Mod.LogInfo(position);
+                        
+
 
                     }
                     else
@@ -206,15 +232,15 @@ namespace KitchenMyMod
                     // check horizontal adjacencies for wall presence
                     if (j < bounds.max.x)
                     {
-                        var right = position + (Vector3)LayoutHelpers.Directions[3];
-                        if (GetRoom(position) == GetRoom(right))
+                        var right = layoutPosition + (Vector3)LayoutHelpers.Directions[3];
+                        if (GetRoom(layoutPosition) == GetRoom(right))
                         {
                             // same room, must be no walls!
                             verticalWallString.Add(0b11);
 
                         }
                         else
-                        if (CanReach(position, right))
+                        if (CanReach(layoutPosition, right))
                         {
                             // can target into the next room, must be a half wall
                             // or maybe a door............? Don't know how to tell
@@ -229,14 +255,14 @@ namespace KitchenMyMod
                     // check vertical adjacencies for wall presence
                     if (i > bounds.min.z)
                     {
-                        var down = position + (Vector3)LayoutHelpers.Directions[1];
-                        if (GetRoom(position) == GetRoom(down))
+                        var down = layoutPosition + (Vector3)LayoutHelpers.Directions[1];
+                        if (GetRoom(layoutPosition) == GetRoom(down))
                         {
                             // same room, must be no walls!
                             horizontalWallString.Add(0b11);
 
                         }
-                        else if (CanReach(position, down))
+                        else if (CanReach(layoutPosition, down))
                         {
                             // can target into the next room, must be a half wall
                             // or maybe a door............? Don't know how to tell
@@ -253,8 +279,8 @@ namespace KitchenMyMod
                 // append wall strings in correct order
                 wallCodes = wallCodes.Concat(verticalWallString);
                 wallCodes = wallCodes.Concat(horizontalWallString);
-
             }
+            Mod.LogError(applianceString);
             string wallString = "";
             int piece = 0;
             int accumulator = 0;
@@ -309,7 +335,7 @@ namespace KitchenMyMod
                             }
                         }
                     }
-    //*/
+    */
 
     /// <summary>
     /// Converted from lz-string 1.4.4
