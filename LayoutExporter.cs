@@ -9,7 +9,7 @@ using System.Text;
 using Unity.Entities;
 using UnityEngine;
 
-namespace KitchenMyMod
+namespace PlateUpPlannerIntegration
 {
     public class LayoutExporter : RestaurantSystem, IModSystem
     {
@@ -154,7 +154,6 @@ namespace KitchenMyMod
         {
             if (TryGetSingletonEntity<SExportRequest>(out Entity e))
             {
-                Mod.LogInfo("Exporting...");
                 Export();
                 EntityManager.DestroyEntity(e);
             }
@@ -165,7 +164,6 @@ namespace KitchenMyMod
             if (GameInfo.CurrentScene == SceneType.Kitchen)
             {
                 _instance?.GetOrCreate<SExportRequest>();
-                Mod.LogInfo("RequestExport");
             }
         }
 
@@ -218,7 +216,6 @@ namespace KitchenMyMod
                         {
                             applianceCode = applianceMap[appliance.ID] + "u";
                         }
-                        Mod.LogInfo(position);
                         
 
 
@@ -280,7 +277,6 @@ namespace KitchenMyMod
                 wallCodes = wallCodes.Concat(verticalWallString);
                 wallCodes = wallCodes.Concat(horizontalWallString);
             }
-            Mod.LogError(applianceString);
             string wallString = "";
             int piece = 0;
             int accumulator = 0;

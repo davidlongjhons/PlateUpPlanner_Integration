@@ -1,12 +1,11 @@
 ﻿using KitchenLib;
 using KitchenMods;
 using PreferenceSystem;
-using System;
 using System.Reflection;
 using UnityEngine;
 
 // Namespace should have "Kitchen" in the beginning
-namespace KitchenMyMod
+namespace PlateUpPlannerIntegration
 {
     public class Mod : BaseMod, IModSystem
     {
@@ -61,10 +60,29 @@ namespace KitchenMyMod
             PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
             PrefManager
                 .AddLabel("Planner Integration")
-                .AddButton("Export current layout", delegate (int _)
+                .AddButton("Export Current", delegate (int _)
                 {
                     LayoutExporter.RequestExport();
+                })
+                .AddButton("Import Menu", delegate (int _)
+                {
+                    ImportGUIManager.Show();
                 });
+                /*
+                .AddSubmenu("Import Options", "importOptions")
+                    .AddInfo("\"Check Importability\" will check that you have the appliances required to import")
+                    .AddButton("Check Importability", delegate (int _)
+                    {
+                        KitchenLayoutImport.LayoutImporter.RequestImport();
+                    })
+                    .AddInfo("Note: Import button only works if import check passes.")
+                    .AddButton("Import", delegate (int _)
+                    {
+                        KitchenLayoutImport.LayoutImporter.RequestImport();
+                    })
+                .SubmenuDone();
+                */
+                
 
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
         }
