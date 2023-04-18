@@ -1,5 +1,6 @@
 ﻿using KitchenLib;
 using KitchenMods;
+using ONe.KitchenDesigner;
 using PreferenceSystem;
 using System.Reflection;
 using UnityEngine;
@@ -46,6 +47,10 @@ namespace PlateUpPlannerIntegration
             LogInfo("Done loading game data.");
         }
 
+        private static GameObject GameObject { get; set; }
+        public static ImportGUIManager ImportGUIManager { get; private set; }
+
+
             #region Logging
             public static void LogInfo(string _log) { Debug.Log($"[{MOD_NAME}] " + _log); }
             public static void LogWarning(string _log) { Debug.LogWarning($"[{MOD_NAME}] " + _log); }
@@ -57,6 +62,9 @@ namespace PlateUpPlannerIntegration
         private static PreferenceSystemManager PrefManager;
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
+            GameObject = new GameObject("ImportMenu");
+            ImportGUIManager = GameObject.AddComponent<ImportGUIManager>();
+
             PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
             PrefManager
                 .AddLabel("Planner Integration")

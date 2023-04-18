@@ -18,7 +18,7 @@ namespace PlateUpPlannerIntegration
 
         private static LayoutImporter _instance;
 
-        static string wallPacking = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
+        //static string wallPacking = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
 
         public static Dictionary<int, string> applianceMap = new (string, int)[]{
             ("60", 505496455),
@@ -173,12 +173,14 @@ namespace PlateUpPlannerIntegration
 
         protected string Import()
         {
-
+            Mod.LogInfo("import started");
+            return "";
         }
 
         public string ImportCheck()
         {
-
+            Mod.LogInfo("import checking");
+            return "";
         }
     }
 }

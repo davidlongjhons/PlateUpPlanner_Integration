@@ -5,11 +5,13 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Unity.Entities;
 using System.Collections.Generic;
 using System.Diagnostics;
+using KitchenMods;
 
 namespace PlateUpPlannerIntegration
 {
     public class ImportGUIManager : MonoBehaviour
     {
+
         private bool _show;
         private static readonly int WindowId = nameof(PlateUpPlannerIntegration).GetHashCode();
         public static float Scale { get; private set; } = 1f;
@@ -18,7 +20,7 @@ namespace PlateUpPlannerIntegration
         {
             _show = true;
         }
-        private void Update()
+        public void Update()
         {
             if (Input.GetKeyDown(KeyCode.Escape))
             {
