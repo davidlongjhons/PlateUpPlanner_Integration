@@ -1,6 +1,5 @@
 ﻿using KitchenLib;
 using KitchenMods;
-using ONe.KitchenDesigner;
 using PreferenceSystem;
 using System.Reflection;
 using UnityEngine;
@@ -48,7 +47,7 @@ namespace PlateUpPlannerIntegration
         }
 
         private static GameObject GameObject { get; set; }
-        public static ImportGUIManager ImportGUIManager { get; private set; }
+        public static ImportGUIManager ImportGUIManager { get; private set; } 
 
 
             #region Logging
@@ -74,6 +73,7 @@ namespace PlateUpPlannerIntegration
                 })
                 .AddButton("Import Menu", delegate (int _)
                 {
+                    Mod.LogInfo("*******BUTTON CLICKED ------------------------------------------------------------------------------------------------------------------------");
                     ImportGUIManager.Show();
                 });
                 /*

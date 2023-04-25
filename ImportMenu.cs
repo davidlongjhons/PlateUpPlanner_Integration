@@ -1,6 +1,7 @@
 ﻿using Kitchen;
 using Shapes;
 using UnityEngine;
+using System.Collections;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Unity.Entities;
 using System.Collections.Generic;
@@ -18,13 +19,36 @@ namespace PlateUpPlannerIntegration
 
         public void Show()
         {
+            Mod.LogInfo("show has started");
             _show = true;
+            Mod.LogInfo(_show);
         }
         public void Update()
         {
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 _show = false;
+            }
+        }
+
+        private static string _importStatus = "";
+         public static void SetStatus(string newStatus)
+        {
+            _importStatus = newStatus;
+        }
+        private static string GetStatus()
+        {
+            if (_importStatus == "")
+            {
+                return "";
+            }
+            else if (_importStatus == "None")
+            {
+                return "All items in planner are also in plateup game. You can safely import";
+            }
+            else
+            {
+                return _importStatus;
             }
         }
         private Rect CalculateWindowRect()
@@ -40,8 +64,10 @@ namespace PlateUpPlannerIntegration
         }
         private void OnGUI()
         {
-            if (_show)
+            Mod.LogInfo("ONGUI has started");
+            if (_show == true)
             {
+                Mod.LogInfo("SHOW is true");
                 var windowRect = CalculateWindowRect();
 
                 GUIUtility.ScaleAroundPivot(new Vector2(Scale, Scale), new Vector2(Screen.width / 2f, Screen.height / 2f));
@@ -105,6 +131,11 @@ namespace PlateUpPlannerIntegration
             GUILayout.BeginHorizontal();
             GUILayout.Label("Static imports will import without any smart grabber/teleporter configuration, and IMPORT CHECKS ARE REQUIRED. **If no button appears, first do an import check.", GUILayout.Width(350));
             GUILayout.Button("Static Import", GUILayout.ExpandWidth(true));
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Import Status: ");
+            GUILayout.Label(GetStatus());
             GUILayout.EndHorizontal();
 
             GUILayout.EndScrollView();
