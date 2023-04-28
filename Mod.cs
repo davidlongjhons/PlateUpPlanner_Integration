@@ -2,6 +2,7 @@
 using KitchenMods;
 using PreferenceSystem;
 using System.Reflection;
+using TwitchLib.PubSub.Events;
 using UnityEngine;
 
 // Namespace should have "Kitchen" in the beginning
@@ -35,6 +36,8 @@ namespace PlateUpPlannerIntegration
         protected override void OnInitialise()
         {
             LogWarning($"{MOD_GUID} v{MOD_VERSION} in use!");
+            GameObject = new GameObject("ImportMenu");
+            ImportGUIManager = GameObject.AddComponent<ImportGUIManager>();
         }
 
         private void AddGameData()
@@ -61,9 +64,6 @@ namespace PlateUpPlannerIntegration
         private static PreferenceSystemManager PrefManager;
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
-            GameObject = new GameObject("ImportMenu");
-            ImportGUIManager = GameObject.AddComponent<ImportGUIManager>();
-
             PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
             PrefManager
                 .AddLabel("Planner Integration")
@@ -73,7 +73,6 @@ namespace PlateUpPlannerIntegration
                 })
                 .AddButton("Import Menu", delegate (int _)
                 {
-                    Mod.LogInfo("*******BUTTON CLICKED ------------------------------------------------------------------------------------------------------------------------");
                     ImportGUIManager.Show();
                 });
                 /*

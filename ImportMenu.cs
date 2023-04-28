@@ -7,6 +7,7 @@ using Unity.Entities;
 using System.Collections.Generic;
 using System.Diagnostics;
 using KitchenMods;
+using System.Linq;
 
 namespace PlateUpPlannerIntegration
 {
@@ -19,9 +20,7 @@ namespace PlateUpPlannerIntegration
 
         public void Show()
         {
-            Mod.LogInfo("show has started");
             _show = true;
-            Mod.LogInfo(_show);
         }
         public void Update()
         {
@@ -31,7 +30,7 @@ namespace PlateUpPlannerIntegration
             }
         }
 
-        private static string _importStatus = "";
+        private static string _importStatus = "Import status will appear here";
          public static void SetStatus(string newStatus)
         {
             _importStatus = newStatus;
@@ -64,10 +63,8 @@ namespace PlateUpPlannerIntegration
         }
         private void OnGUI()
         {
-            Mod.LogInfo("ONGUI has started");
             if (_show == true)
             {
-                Mod.LogInfo("SHOW is true");
                 var windowRect = CalculateWindowRect();
 
                 GUIUtility.ScaleAroundPivot(new Vector2(Scale, Scale), new Vector2(Screen.width / 2f, Screen.height / 2f));
@@ -92,6 +89,11 @@ namespace PlateUpPlannerIntegration
         private static Vector2 _scrollPos;
         private static string _newLayoutString = "";
 
+        public static string GetLayoutString()
+        {
+            return _newLayoutString;
+        }
+
         public static void Draw()
         {
             GUILayout.BeginVertical();
@@ -107,10 +109,9 @@ namespace PlateUpPlannerIntegration
 
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, false, true, GUIStyle.none, GUI.skin.verticalScrollbar);
 
-            GUILayout.Label("Copy your entire planner link in the text area below (https://plateupplanner.github.io/workspace#..._:");
+            GUILayout.Label("Copy your entire planner link in the text area below (https://plateupplanner.github.io/workspace#...");
 
             var newLayoutString = GUILayout.TextArea(_newLayoutString, GUILayout.Height(100));
-            var hasChanges = newLayoutString != _newLayoutString;
             _newLayoutString = newLayoutString;
 
             var style = new GUIStyle(GUI.skin.label);
@@ -118,24 +119,42 @@ namespace PlateUpPlannerIntegration
             GUILayout.BeginHorizontal();
             GUILayout.EndHorizontal();
 
-            GUILayout.FlexibleSpace();
-
             GUILayout.BeginHorizontal();
             GUILayout.Label("Check if current layout has enough appliances for planner link", GUILayout.Width(350));
-            if(GUILayout.Button("Import Check", GUILayout.ExpandWidth(true)))
+            if (GetLayoutString() != "")
             {
-                LayoutImporter.RequestImportCheck();
+                if (GUILayout.Button("Import Check", GUILayout.ExpandWidth(true)))
+                {
+                    LayoutImporter.RequestImportCheck();
+                }
             }
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Static imports will import without any smart grabber/teleporter configuration, and IMPORT CHECKS ARE REQUIRED. **If no button appears, first do an import check.", GUILayout.Width(350));
-            GUILayout.Button("Static Import", GUILayout.ExpandWidth(true));
+            GUILayout.Label("Import checks are required to use the import feature. This will make sure you do not spawn in extra appliances; if this is your goal(a creative mode of sorts), try a static import", GUILayout.Width(350));
+            if (LayoutImporter.GetImportCheckStatus() == true)
+            {
+                if (GUILayout.Button("Import", GUILayout.ExpandWidth(true)))
+                {
+                    LayoutImporter.RequestImport();
+                }
+            }
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Import Status: ");
             GUILayout.Label(GetStatus());
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Static Imports do not require an import check, which means they spawn items in without regard to your current resturaunt. WARNING: this is similar to using creative mode and is NOT REVERSIBLE");
+            if (GetLayoutString() != "")
+            {
+                if (GUILayout.Button("Static Import", GUILayout.ExpandWidth(true)))
+                {
+                    LayoutImporter.RequestStaticImport();
+                }
+            }
             GUILayout.EndHorizontal();
 
             GUILayout.EndScrollView();

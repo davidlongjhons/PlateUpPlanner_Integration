@@ -55,9 +55,9 @@ namespace PlateUpPlannerIntegration
         protected string Export()
         {
             var bounds = base.Bounds;
-            LogVector(bounds.min);
+            /*LogVector(bounds.min);
             LogVector(bounds.max);
-            LogVector(base.GetFrontDoor());
+            LogVector(base.GetFrontDoor());*/
             int height = (int)(bounds.max.z - bounds.min.z + 1);
             int width = (int)(bounds.max.x - bounds.min.x + 1);
             string layoutString = $"v2 {height}x{width} ";

@@ -1,5 +1,6 @@
 ﻿using Kitchen;
 using Kitchen.Layouts;
+using KitchenData;
 using KitchenMods;
 using System;
 using System.Collections.Generic;
@@ -16,10 +17,25 @@ namespace PlateUpPlannerIntegration
     {
         protected struct SImportRequest : IComponentData, IModComponent { }
         protected struct SImportCheckRequest : IComponentData, IModComponent { }
+        protected struct SStaticImportRequest : IComponentData, IModComponent { }
 
         private static LayoutImporter _instance;
 
         //static string wallPacking = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
+
+        //for a static import to work the user must do an import check, and this bool will store it.
+        private static bool _importCheckStatus;
+
+        //set import check status
+        public static void SetImportCheckStatus(bool status)
+        {
+            _importCheckStatus = status;
+        }
+        //retrieve the import check status
+        public static bool GetImportCheckStatus()
+        {
+            return _importCheckStatus;
+        }
 
         //import appliance map is used to go from planner codes to plateup codes
         public static Dictionary<string, int> importApplianceMap = new Dictionary<string, int>  {
@@ -38,9 +54,9 @@ namespace PlateUpPlannerIntegration
             { "6O", -1495393751 },
             { "VX", 1776760557 },
             { "HD", -1993346570 },
-            // { "1Z", -751458770 },
+            //robot buffer (1z) may need to be RobotBufferMobile
             { "1Z", -1723340146 },
-            { "9V", -2091039911 },
+            //robot mop (9v) may need to be RobotMopMobile
             { "9V", -2147057861 },
             { "fU", 1973114260 },
             { "w5", -1906799936 },
@@ -61,7 +77,6 @@ namespace PlateUpPlannerIntegration
             { "5d", -1813414500 },
             { "F5", -571205127 },
             { "5T", -729493805 },
-            { "4K", -272437832 },
             { "4K", 1586911545 },
             { "CR", 1446975727 },
             { "8B", 1139247360 },
@@ -73,18 +88,18 @@ namespace PlateUpPlannerIntegration
             { "JD", -1068749602 },
             { "yi", -905438738 },
             { "FG", 1807525572 },
-            { "uW", 269523389 }, //meat
+            { "uW", -484165118 },
             { "dG", -1573812073 },
             { "Dc", 759552160 },
             { "Ar", -452101383 },
             { "zQ", -117339838 },
             { "NV", 961148621 },
-            { "Ls", -1735137431 },
+            // this is SourceFish2? { "Ls", -1735137431 },
             { "Ls", -609358791 },
             { "AG", 925796718 },
             { "vu", -1533430406 },
             { "SS", 1193867305 },
-            { "uW", -484165118 },
+            //{ "uW", -484165118 }, SourceMeat in game
             { "5B", -1097889139 },
             { "Ja", 1834063794 },
             { "WU", -1963699221 },
@@ -92,8 +107,6 @@ namespace PlateUpPlannerIntegration
             { "Qi", -1201769154 },
             { "ET", -1506824829 },
             { "0s", -1353971407 },
-            { "ze", -996680732 },
-            { "2M", 1653145961 },
             { "2M", 434150763 },
             { "ao", 380220741 },
             { "m2", 1313469794 },
@@ -109,9 +122,8 @@ namespace PlateUpPlannerIntegration
             { "mD", 1528688658 },
             { "zZ", 2080633647 },
             { "CZ", 446555792 },
-            { "qB", 938247786 },
+            // chair glitches { "qB", -1979922052 },
             { "qC", 1648733244 },
-            { "qB", -1979922052 },
             { "tV", -3721951 },
             { "T2", -34659638 },
             { "cJ", -203679687 },
@@ -129,14 +141,31 @@ namespace PlateUpPlannerIntegration
             { "v2", 1467371088 },
             { "Nt", 1860904347 },
             { "bZ", -266993023 },
-            { "0R", 1159228054 },
             { "IX", 303858729 },
             { "zd", -2133205155 },
-            { "fU", -667884240 },
-            { "96", -349733673 },
-            /*{ "96", 1836107598 },
-            { "96", 369884364 }, */
             { "jC", 976574457 },
+            { "hp", 739504637 },
+            { "xm", -823922901 },
+            { "j0", -2092567672 },
+            { "P7", 385684499 },
+            { "HL", 148543530 },
+            { "6D", -1609758240 },
+            { "gN", 735786885 },
+            { "1D", -1132411297 },
+            { "Sx", 1799769627 },
+            { "We", -965827229 },
+            { "NG", -117356585 },
+            { "i9", -1210117767 },
+            { "CH", -1507801323 },
+            { "jt", 1800865634 },
+            { "E5", 269523389 },
+            { "fH", -2042103798 },
+            { "co", 44541785 },
+            { "I4", -1055654549 },
+            { "XJ", 595306349 },
+            { "um", -471813067 },
+            { "1K", -712909563 },
+            { "3V", -331651461 },
         };
         protected override void Initialise()
         {
@@ -157,6 +186,11 @@ namespace PlateUpPlannerIntegration
                 ImportCheck();
                 EntityManager.DestroyEntity(e2);
             }
+            if (TryGetSingletonEntity<SStaticImportRequest>(out Entity e3))
+            {
+                StaticImport();
+                EntityManager.DestroyEntity(e3);
+            }
         }
 
         //if you are in a kitchen, a simpleton will be created which is affected in OnUpdate()
@@ -164,7 +198,7 @@ namespace PlateUpPlannerIntegration
         {
             if (GameInfo.CurrentScene == SceneType.Kitchen)
             {
-                _instance?.GetOrCreate<SImportRequest>();
+                _instance?.GetOrCreate<SImportCheckRequest>();
             }
         }
         public static void RequestImport()
@@ -175,30 +209,144 @@ namespace PlateUpPlannerIntegration
             }
         }
 
+        public static void RequestStaticImport()
+        {
+            if (GameInfo.CurrentScene == SceneType.Kitchen)
+            {
+                _instance?.GetOrCreate<SStaticImportRequest>();
+            }
+        }
 
-        //
+        protected void StaticImport()
+        {
+            //find the HxW of the plateup map
+            var bounds = base.Bounds;
+            /*LogVector(bounds.min);
+            LogVector(bounds.max);
+            LogVector(base.GetFrontDoor());*/
+            int height = (int)(bounds.max.z - bounds.min.z + 1);
+            int width = (int)(bounds.max.x - bounds.min.x + 1);
+
+            //decompress then extract data from the planner url
+            if (ImportGUIManager.GetLayoutString().IndexOf("#") != -1)
+            {
+                string fullUrl = ImportGUIManager.GetLayoutString();
+                string[] splitURL = fullUrl.Split('#');
+                string layoutString = splitURL[1];
+                string decodedString = LZString.DecompressFromEncodedURIComponent(layoutString);
+                string[] splitString = decodedString.Split(' ');
+                string plannerHxW = splitString[1];
+                string plannerAppliances = splitString[2];
+                string plannerWalls = splitString[3];
+                string plannerHeight = plannerHxW.Split('x')[0];
+                string plannerWidth = plannerHxW.Split('x')[1];
+                var plannerApplianceList = new List<string>();
+                var plannerApplianceRotations = new List<string>();
+                for (int i = 0; i < plannerAppliances.Length / 3; i++)
+                {
+                    plannerApplianceList.Add(plannerAppliances.Substring(i * 3, 2));
+                    plannerApplianceRotations.Add(plannerAppliances.Substring(i * 3 + 2, 1));
+                }
+                var plannerApplianceCodes = new List<int>();
+                foreach (string appliance in plannerApplianceList)
+                {
+                    if (appliance != "00" && appliance != "qB")
+                    {
+                        string newAppliance = appliance;
+                        Mod.LogInfo(appliance);
+                        if (appliance == "U7" || appliance == "mq")
+                        {
+                            newAppliance = "3V";
+                        }
+                        Mod.LogInfo(newAppliance);
+                        plannerApplianceCodes.Add(importApplianceMap[newAppliance]);
+                    }
+                    else
+                    {
+                        plannerApplianceCodes.Add(00);
+                    }
+                }
+
+                for (float i = bounds.max.z; i >= bounds.min.z; i--)
+                {
+                    for (float j = bounds.min.x; j <= bounds.max.x; j++)
+                    {
+                        string rotation = plannerApplianceRotations[0];
+                        Quaternion switchedRotation;
+                        //Mod.LogInfo(switchedRotation);
+                        switch (rotation)
+                        {
+                            default:
+                                switchedRotation = new Quaternion(0f, 0f, 0f, 1f);
+                                break;
+                            case "r":
+                                switchedRotation = new Quaternion(0f, 0.7071068f, 0f, 0.7071068f);
+                                break;
+                            case "l":
+                                switchedRotation = new Quaternion(0f, -0.7071068f, 0f, 0.7071068f);
+                                break;
+                            case "d":
+                                switchedRotation = new Quaternion(0f, 0.9999999f, 0f, 0f);
+                                break;
+                        }
+
+                        var layoutPosition = new CPosition
+                        {
+                            Position = new Vector3 { x = j, z = i },
+                            Rotation = switchedRotation
+                        };
+                        CCreateAppliance appliance = plannerApplianceCodes[0];
+                        var newAppliance = EntityManager.CreateEntity();
+                        if (base.GetOccupant(layoutPosition) != default(Entity))
+                        {
+                            EntityManager.DestroyEntity(base.GetPrimaryOccupant(layoutPosition));
+                            base.SetOccupant(layoutPosition, default(Entity));
+                        }
+
+                        if (appliance == 00)
+                        {
+                            EntityManager.AddComponent<CCreateAppliance>(default(Entity));
+                            EntityManager.AddComponent<CPosition>(newAppliance);
+                            EntityManager.SetComponentData<CPosition>(newAppliance, layoutPosition);
+                        }
+                        else
+                        {
+                            EntityManager.AddComponent<CCreateAppliance>(newAppliance);
+                            EntityManager.SetComponentData<CCreateAppliance>(newAppliance, appliance);
+                            EntityManager.AddComponent<CPosition>(newAppliance);
+                            EntityManager.SetComponentData<CPosition>(newAppliance, layoutPosition);
+                        }
+                        plannerApplianceCodes.RemoveAt(0);
+                        plannerApplianceRotations.RemoveAt(0);
+                    }
+                }
+            }
+            
+        }
+
         protected void Import()
         {
             //firstly, we want to find the HxW of the plateup map
             var bounds = base.Bounds;
-            LogVector(bounds.min);
+            /*LogVector(bounds.min);
             LogVector(bounds.max);
-            LogVector(base.GetFrontDoor());
+            LogVector(base.GetFrontDoor());*/
             int height = (int)(bounds.max.z - bounds.min.z + 1);
             int width = (int)(bounds.max.x - bounds.min.x + 1);
 
             //next, we want to decompress then extract data from the planner url
-            string fullUrl = "";
+            string fullUrl = ImportGUIManager.GetLayoutString();
             string[] splitURL = fullUrl.Split('#');
             string layoutString = splitURL[1];
             string decodedString = LZString.DecompressFromEncodedURIComponent(layoutString);
+            //Mod.LogInfo(decodedString); 
             string[] splitString = decodedString.Split(' ');
             string plannerVersion = splitString[0];
             string plannerHxW = splitString[1];
             string plannerAppliances = splitString[2];
             string plannerWalls = splitString[3];
             string plannerHeight = plannerHxW.Split('x')[0];
-            string plannerWidth = plannerHxW.Split('x')[1];
+            string plannerWidth = plannerHxW.Split('x')[1]; 
         }
 
         //import check is needed because you want to make sure you are not cheating by spawning in appliances
@@ -206,85 +354,125 @@ namespace PlateUpPlannerIntegration
         {
             //find the HxW of the plateup map
             var bounds = base.Bounds;
-            LogVector(bounds.min);
+            /*LogVector(bounds.min);
             LogVector(bounds.max);
-            LogVector(base.GetFrontDoor());
+            LogVector(base.GetFrontDoor());*/
             int height = (int)(bounds.max.z - bounds.min.z + 1);
             int width = (int)(bounds.max.x - bounds.min.x + 1);
 
             //decompress then extract data from the planner url
-            string fullUrl = "";
-            string[] splitURL = fullUrl.Split('#');
-            string layoutString = splitURL[1];
-            string decodedString = LZString.DecompressFromEncodedURIComponent(layoutString);
-            string[] splitString = decodedString.Split(' ');
-            string plannerVersion = splitString[0];
-            string plannerHxW = splitString[1];
-            string plannerAppliances = splitString[2];
-            string plannerWalls = splitString[3];
-            string plannerHeight = plannerHxW.Split('x')[0];
-            string plannerWidth = plannerHxW.Split('x')[1];
-            var plannerApplianceList = new List<string>();
-            for(int i = 0; i  < plannerAppliances.Length/3; i++)
+            if (ImportGUIManager.GetLayoutString().IndexOf("#") != -1)
             {
-                plannerApplianceList.Add(plannerAppliances.Substring(i*3, 2));
-            }
-            var plannerApplianceCodes = new List<int>();
-            foreach (string appliance in plannerApplianceList)
-            {
-                plannerApplianceCodes.Add(importApplianceMap[appliance]);
-            }
-
-            var gameApplianceCodes = new List<int>();
-            //extract appliances from plateup game
-            for (float i = bounds.max.z; i >= bounds.min.z; i--)
-            {
-                for (float j = bounds.min.x; j <= bounds.max.x; j++)
+                string fullUrl = ImportGUIManager.GetLayoutString();
+                //Mod.LogInfo(fullUrl);
+                string[] splitURL = fullUrl.Split('#');
+                string layoutString = splitURL[1];
+                string decodedString = LZString.DecompressFromEncodedURIComponent(layoutString);
+                //Mod.LogInfo("2");
+                string[] splitString = decodedString.Split(' ');
+                string plannerHxW = splitString[1];
+                string plannerAppliances = splitString[2];
+                string plannerWalls = splitString[3];
+                //Mod.LogInfo("3");
+                string plannerHeight = plannerHxW.Split('x')[0];
+                string plannerWidth = plannerHxW.Split('x')[1];
+                var plannerApplianceList = new List<string>();
+                for (int i = 0; i < plannerAppliances.Length / 3; i++)
                 {
-                    CAppliance appliance;
-                    var layoutPosition = new Vector3 { x = j, z = i };
-                    var applianceEntity = base.GetPrimaryOccupant(layoutPosition);
-                    if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && LayoutExporter.exportApplianceMap.ContainsKey(appliance.ID))
+                    plannerApplianceList.Add(plannerAppliances.Substring(i * 3, 2));
+                }
+                var plannerApplianceCodes = new List<int>();
+                foreach (string appliance in plannerApplianceList)
+                {
+                    if (appliance != "00" && appliance != "qB")
                     {
-                        gameApplianceCodes.Add(appliance.ID);
+                        string newAppliance = appliance;
+                        //Mod.LogInfo(appliance);
+                        if (appliance == "U7" || appliance == "mq")
+                        {
+                            newAppliance = "3V";
+                        }
+                        Mod.LogInfo(newAppliance);
+                        plannerApplianceCodes.Add(importApplianceMap[newAppliance]);
                     }
                 }
-            }
 
-            //check for each item in the planner, if it is in the game, and if it is remove and proceed, if not add it to an error list
-            var applianceMismatchList = new List<int>();
-            foreach (int appliance in plannerApplianceCodes)
-            {
-                if (gameApplianceCodes.IndexOf(appliance) != -1)
+                var gameApplianceCodes = new List<int>();
+                //extract appliances from plateup game
+                for (float i = bounds.max.z; i >= bounds.min.z; i--)
+                {
+                    for (float j = bounds.min.x; j <= bounds.max.x; j++)
+                    {
+                        CAppliance appliance;
+                        var layoutPosition = new Vector3 { x = j, z = i };
+                        var applianceEntity = base.GetPrimaryOccupant(layoutPosition);
+                        if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && LayoutExporter.exportApplianceMap.ContainsKey(appliance.ID))
+                        {
+                            gameApplianceCodes.Add(appliance.ID);
+                        }
+                    }
+                }
+
+                //check for each item in the planner, if it is in the game, and if it is remove and proceed, if not add it to an error list
+                var applianceMismatchList = new List<int>();
+                var gameApplianceRemoves = new List<int>();
+                var plannerApplianceRemoves = new List<int>();
+                //foreach (int appliance in plannerApplianceCodes)
+                for (int i = 0; i < plannerApplianceCodes.Count; i++)
+                {
+                    int appliance = plannerApplianceCodes[i];
+                    if (gameApplianceCodes.IndexOf(appliance) != -1)
+                    {
+                        gameApplianceRemoves.Add(appliance);
+                        plannerApplianceRemoves.Add(appliance);
+                    }
+                    else
+                    {
+                        applianceMismatchList.Add(appliance);
+                    }
+                }
+
+                foreach (int appliance in gameApplianceRemoves)
                 {
                     gameApplianceCodes.Remove(appliance);
+                }
+                foreach (int appliance in plannerApplianceRemoves)
+                {
                     plannerApplianceCodes.Remove(appliance);
+                }
+
+                //set the import check value
+                string mismatches = "Missing appliances: ";
+
+                Dictionary<string, int> mismatchDictionary = new Dictionary<string, int>();
+                foreach (int mismatch in applianceMismatchList)
+                {
+                    if (GameData.Main.TryGet<Appliance>(mismatch, out Appliance appliance))
+                    {
+                        if (mismatchDictionary.ContainsKey(appliance.Name))
+                        {
+                            mismatchDictionary[appliance.Name]++;
+                        }
+                        else
+                        {
+                            mismatchDictionary[appliance.Name] = 1;
+                        }
+                    }
+                }
+
+                mismatches += string.Join(", ", mismatchDictionary.Select(kv => $"{kv.Value} {kv.Key}"));
+
+                if (applianceMismatchList.Count == 0)
+                {
+                    ImportGUIManager.SetStatus("None");
+                    SetImportCheckStatus(true);
                 }
                 else
                 {
-                    applianceMismatchList.Add(appliance);
+                    ImportGUIManager.SetStatus(mismatches);
                 }
             }
-
-            //set the import check value
-            string mismatches = "";
-            foreach (int mismatch in applianceMismatchList)
-            {
-                mismatches += mismatch + ' ';
-            }
-
-            foreach (int mismatch in applianceMismatchList)
-            {
-
-            }
-            if (applianceMismatchList.Count == 0)
-            {
-                ImportGUIManager.SetStatus("None");
-            }
-            else
-            {
-                ImportGUIManager.SetStatus(mismatches);
-            }
+            
         }
 
         //this is really just for debugging
