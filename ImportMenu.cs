@@ -73,7 +73,7 @@ namespace PlateUpPlannerIntegration
                 backgroundTexture.SetPixel(0, 0, new Color(0.15f, 0.15f, 0.15f, 1));
                 backgroundTexture.Apply();
 
-                var guiStyle = GUI.skin.window;
+                var guiStyle = new GUIStyle(GUI.skin.window);
                 guiStyle.normal.background = backgroundTexture;
 
                 GUI.Box(windowRect, GUIContent.none, new GUIStyle { normal = new GUIStyleState { background = backgroundTexture } });
@@ -154,6 +154,13 @@ namespace PlateUpPlannerIntegration
                 {
                     LayoutImporter.RequestStaticImport();
                 }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Location", GUILayout.ExpandWidth(true)))
+            {
+                LayoutImporter.RequestLocationCheck();
             }
             GUILayout.EndHorizontal();
 

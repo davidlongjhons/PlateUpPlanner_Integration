@@ -17,10 +17,8 @@ namespace PlateUpPlannerIntegration
 
         private static LayoutExporter _instance;
 
-        static string wallPacking = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
-
         //map Planner's appliance code to GDO ID
-        public static Dictionary<int, string> exportApplianceMap = LayoutImporter.importApplianceMap.ToDictionary(a => a.Value, a => a.Key);
+        public static Dictionary<int, string> exportApplianceMap = ImportExportHelpers.applianceMap.ToDictionary(a => a.Value, a => a.Key);
 
         protected override void Initialise()
         {
@@ -52,9 +50,20 @@ namespace PlateUpPlannerIntegration
             }
         }
 
-        protected string Export()
+        static readonly string wallPacking = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
+
+        ImportExportHelpers ImportExportHelpers = new ImportExportHelpers();
+
+        public Entity GetApplianceAtPosition(Vector3 position)
+        {
+            return base.GetPrimaryOccupant(position);
+        }
+
+        protected void Export()
         {
             var bounds = base.Bounds;
+            //Mod.LogInfo("0");
+            //Mod.LogInfo(".5");
             /*LogVector(bounds.min);
             LogVector(bounds.max);
             LogVector(base.GetFrontDoor());*/
@@ -63,6 +72,7 @@ namespace PlateUpPlannerIntegration
             string layoutString = $"v2 {height}x{width} ";
             string applianceString = "";
             IEnumerable<int> wallCodes = new List<int>();
+            //Mod.LogInfo('1');
             for (float i = bounds.max.z; i >= bounds.min.z; i--)
             {
                 List<int> verticalWallString = new List<int>();
@@ -75,7 +85,8 @@ namespace PlateUpPlannerIntegration
                     CAppliance appliance;
                     CPosition position;
                     string applianceCode;
-                    if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && exportApplianceMap.ContainsKey(appliance.ID))
+                    //Mod.LogInfo("2");
+                    if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && LayoutExporter.exportApplianceMap.ContainsKey(appliance.ID))
                     {
                         // TODO get appliance rotation
                         if (EntityManager.RequireComponent<CPosition>(applianceEntity, out position))
@@ -96,11 +107,11 @@ namespace PlateUpPlannerIntegration
                                     rotation = "d";
                                     break;
                             }
-                            applianceCode = exportApplianceMap[appliance.ID] + rotation;
+                            applianceCode = LayoutExporter.exportApplianceMap[appliance.ID] + rotation;
                         }
                         else
                         {
-                            applianceCode = exportApplianceMap[appliance.ID] + "u";
+                            applianceCode = LayoutExporter.exportApplianceMap[appliance.ID] + "u";
                         }
 
 
@@ -158,7 +169,7 @@ namespace PlateUpPlannerIntegration
                         }
                     }
                 }
-
+                //Mod.LogInfo("3");
                 // append wall strings in correct order
                 wallCodes = wallCodes.Concat(verticalWallString);
                 wallCodes = wallCodes.Concat(horizontalWallString);
@@ -183,6 +194,7 @@ namespace PlateUpPlannerIntegration
                 piece = 0;
                 accumulator = 0;
             }
+            //Mod.LogInfo("4");
             layoutString += applianceString;
             layoutString += " ";
             layoutString += wallString;
@@ -190,8 +202,6 @@ namespace PlateUpPlannerIntegration
             //System.Diagnostics.Process.Start($"https://plateupplanner.github.io/workspace#{layoutString}");
             System.Diagnostics.Process.Start($"https://plateupplanner.github.io/workspace#{compressed}");
             this.Enabled = false;
-            Debug.Log(layoutString);
-            return layoutString;
         }
 
         static void LogVector(Vector3 vector)
