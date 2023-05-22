@@ -72,7 +72,7 @@ namespace PlateUpPlannerIntegration
             string layoutString = $"v2 {height}x{width} ";
             string applianceString = "";
             IEnumerable<int> wallCodes = new List<int>();
-            //Mod.LogInfo('1');
+            Mod.LogInfo('1');
             for (float i = bounds.max.z; i >= bounds.min.z; i--)
             {
                 List<int> verticalWallString = new List<int>();
@@ -85,7 +85,7 @@ namespace PlateUpPlannerIntegration
                     CAppliance appliance;
                     CPosition position;
                     string applianceCode;
-                    //Mod.LogInfo("2");
+                    Mod.LogInfo("2");
                     if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && LayoutExporter.exportApplianceMap.ContainsKey(appliance.ID))
                     {
                         // TODO get appliance rotation
@@ -169,7 +169,7 @@ namespace PlateUpPlannerIntegration
                         }
                     }
                 }
-                //Mod.LogInfo("3");
+                Mod.LogInfo("3");
                 // append wall strings in correct order
                 wallCodes = wallCodes.Concat(verticalWallString);
                 wallCodes = wallCodes.Concat(horizontalWallString);
@@ -194,14 +194,13 @@ namespace PlateUpPlannerIntegration
                 piece = 0;
                 accumulator = 0;
             }
-            //Mod.LogInfo("4");
+            Mod.LogInfo("4");
             layoutString += applianceString;
             layoutString += " ";
             layoutString += wallString;
             string compressed = LZString.CompressToEncodedURIComponent(layoutString);
             //System.Diagnostics.Process.Start($"https://plateupplanner.github.io/workspace#{layoutString}");
             System.Diagnostics.Process.Start($"https://plateupplanner.github.io/workspace#{compressed}");
-            this.Enabled = false;
         }
 
         static void LogVector(Vector3 vector)

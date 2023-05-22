@@ -8,6 +8,7 @@ using System.EnterpriseServices;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
@@ -39,10 +40,14 @@ namespace PlateUpPlannerIntegration
             return _importCheckStatus;
         }
 
+        EntityQuery Appliances;
         protected override void Initialise()
         {
             base.Initialise();
             _instance = this;
+            Appliances = GetEntityQuery(new QueryHelper()
+                .All(typeof(CAppliance), typeof(CPosition))
+                .None(typeof(CImmovable)));
         }
 
         //baloney to do stuff with singletones so the methods actually run
@@ -62,11 +67,6 @@ namespace PlateUpPlannerIntegration
             {
                 StaticImport();
                 EntityManager.DestroyEntity(e3);
-            }
-            if (TryGetSingletonEntity<SRequestLocationCheck>(out Entity e4))
-            {
-                locationChecking();
-                EntityManager.DestroyEntity(e4);
             }
         }
 
@@ -115,7 +115,7 @@ namespace PlateUpPlannerIntegration
                 var plannerApplianceRotations = ImportExportHelpers.GetPlannerRotationsList(plannerAppliancesString);
                 //list of appliances as game codes, for more info see https://github.com/KitchenMods/KitchenLib/blob/master/KitchenLib/src/References/GDOReferences.cs 
                 var plannerApplianceCodes = ImportExportHelpers.GetPlannerApplianceCodes(plannerApplianceList);
-                for (float i = bounds.max.z; i >= bounds.min.z; i--)
+                for (float i = bounds.max.z; i >= bounds.min.z - 2; i--)
                 {
                     for (float j = bounds.min.x; j <= bounds.max.x; j++)
                     {
@@ -171,144 +171,58 @@ namespace PlateUpPlannerIntegration
             }
         }
 
-        protected struct SRequestLocationCheck : IComponentData, IModComponent { }
-        public static bool RequestLocationCheck()
-        {
-            if (GameInfo.CurrentScene == SceneType.Kitchen)
-            {
-                _instance?.GetOrCreate<SRequestLocationCheck>();
-            }
-            return true;
-        }
-
-        public void locationChecking()
-        {
-            Entity newAppliance = EntityManager.CreateEntity();
-            int appliance = 1313469794;
-            Vector3 layoutPosition = new Vector3 { x = 0, z = 0 };
-            EntityManager.AddComponent<CCreateAppliance>(newAppliance);
-            EntityManager.SetComponentData<CCreateAppliance>(newAppliance, appliance);
-            EntityManager.AddComponent<CPosition>(newAppliance);
-            EntityManager.SetComponentData<CPosition>(newAppliance, layoutPosition);
-        }
-
         protected void Import()
         {
-            //firstly, we want to find the HxW of the plateup map
             var bounds = base.Bounds;
-            /*LogVector(bounds.min);
-            LogVector(bounds.max);
-            LogVector(base.GetFrontDoor());*/
-            int height = (int)(bounds.max.z - bounds.min.z + 1);
             int width = (int)(bounds.max.x - bounds.min.x + 1);
 
-            //string of appliances straight from the planner; if you want to know more info about the planner link, see the ImportExportHelpers class
-            string plannerAppliancesString = ImportExportHelpers.GetPlannerAppliances(ImportExportHelpers.DecodePlannerURL());
-            //list of planner appliances in the planner format - not game codes. for more info, see https://github.com/plateupplanner/plateupplanner.github.io/blob/main/src/utils/helpers.tsx
-            var plannerApplianceList = ImportExportHelpers.GetPlannerApplianceList(plannerAppliancesString);
-            //list of rotations from the planner url as a list, each rotation corresponding with it's appliance. "u" is up, "l" is left, "d" is down, "r" is right
-            var plannerApplianceRotations = ImportExportHelpers.GetPlannerRotationsList(plannerAppliancesString);
-            //list of appliances as game codes, for more info see https://github.com/KitchenMods/KitchenLib/blob/master/KitchenLib/src/References/GDOReferences.cs 
-            var plannerApplianceCodes = ImportExportHelpers.GetPlannerApplianceCodes(plannerApplianceList);
-            //list of appliances as game codes from the game
-            var gameApplianceCodes = new List<int>();
-            //extract appliances from plateup
-            for (float i = bounds.max.z; i >= bounds.min.z; i--)
+            string importStr = ImportExportHelpers.GetPlannerAppliances(ImportExportHelpers.DecodePlannerURL());
+            var importLst = ImportExportHelpers.GetPlannerApplianceList(importStr);
+            var importRot = ImportExportHelpers.GetPlannerRotationsList(importStr);
+            var importCodes = ImportExportHelpers.GetPlannerApplianceCodes(importLst);
+
+            using NativeArray<Entity> ents = Appliances.ToEntityArray(Allocator.Temp);
+            using NativeArray<CAppliance> appliances = Appliances.ToComponentDataArray<CAppliance>(Allocator.Temp);
+            using NativeArray<CPosition> poss = Appliances.ToComponentDataArray<CPosition>(Allocator.Temp);
+
+            for (int i = 0; i < ents.Length; i++)
             {
-                for (float j = bounds.min.x; j <= bounds.max.x; j++)
+                Entity e = ents[i];
+                CAppliance app = appliances[i];
+                CPosition pos = poss[i];
+
+                int index = importCodes.IndexOf(app.ID);
+                Vector3 newPos = GetFallbackTile();
+                Quaternion newRot = Orientation.Up.ToRotation();
+                if (index != -1)
                 {
-                    //Mod.LogInfo("5");
-                    CAppliance appliance;
-                    Vector3 layoutPosition = new Vector3 { x = j, z = i };
-                    Entity applianceEntity = GetPrimaryOccupant(layoutPosition);
-                    //Mod.LogInfo("6");
-                    if (EntityManager.RequireComponent<CAppliance>(applianceEntity, out appliance) && LayoutExporter.exportApplianceMap.ContainsKey(appliance.ID) && base.GetPrimaryOccupant(layoutPosition) != default(Entity))
-                    {
-                        gameApplianceCodes.Add(appliance.ID);
-                    }
-                    else
-                    {
-                        gameApplianceCodes.Add(00);
-                    }
-                    //Mod.LogInfo("7");
+                    newPos = IndexToPos(index);
+                    newRot = RotStrToRotation(importRot[index]);
+                    importCodes[index] = 0;
                 }
+                pos.Position = newPos;
+                pos.Rotation = newRot;
+                Set(e, pos);
             }
 
-            for (float i = bounds.max.z; i >= bounds.min.z; i--)
+            Vector3 IndexToPos(int index)
             {
-                for (float j = bounds.min.x; j <= bounds.max.x; j++)
-                {
-                    Mod.LogInfo("8");
-                    string rotation = plannerApplianceRotations[0];
-                    Quaternion switchedRotation;
-                    //Mod.LogInfo(switchedRotation);
-                    switch (rotation)
-                    {
-                        default:
-                            switchedRotation = new Quaternion(0f, 0f, 0f, 1f);
-                            break;
-                        case "r":
-                            switchedRotation = new Quaternion(0f, 0.7071068f, 0f, 0.7071068f);
-                            break;
-                        case "l":
-                            switchedRotation = new Quaternion(0f, -0.7071068f, 0f, 0.7071068f);
-                            break;
-                        case "d":
-                            switchedRotation = new Quaternion(0f, 0.9999999f, 0f, 0f);
-                            break;
-                    }
-                    Mod.LogInfo("9");
-                    var currentLayoutPosition = new CPosition
-                    {
-                        Position = new Vector3 { x = j, z = i },
-                        Rotation = switchedRotation
-                    };
-                    Mod.LogInfo(currentLayoutPosition.Position);
+                Mod.LogInfo($"{bounds.max.z} - {bounds.max.z - (index / width)}");
+                return new Vector3((index % width) + bounds.min.x, 0f, bounds.max.z - (index / width));
+            }
 
-                    int desiredEntityCode = plannerApplianceCodes[0];
-                    Mod.LogInfo(desiredEntityCode);
-                    int desiredEntityListLocation = gameApplianceCodes.IndexOf(desiredEntityCode);
-                    Mod.LogInfo(desiredEntityListLocation);
-                    int desiredEntityXPosition = desiredEntityListLocation % height;
-                    Mod.LogInfo(desiredEntityXPosition);
-                    int desiredEntityZPosition = desiredEntityListLocation % width;
-                    Mod.LogInfo(desiredEntityZPosition);
-                    var desiredEntityPosition = new CPosition
-                    {
-                        Position = new Vector3 { x = desiredEntityXPosition - (int)Math.Floor((double)width / 2), z = desiredEntityZPosition + (int)Math.Floor((double)height / 2) -1 }
-                    };
-                    Mod.LogInfo(desiredEntityPosition.Position);
-                    Mod.LogInfo("10");
-                    Entity desiredEntity = GetPrimaryOccupant(desiredEntityPosition.Position);
-                    Entity currentEntity = GetPrimaryOccupant(currentLayoutPosition.Position);
-                    Mod.LogInfo("101");
-                    if (desiredEntity == Entity.Null)
-                    {
-                        desiredEntity = default(Entity);
-                    }
-                    if (currentEntity == Entity.Null)
-                    {
-                        currentEntity = default(Entity);
-                    }
-                    Mod.LogInfo(desiredEntity);
-                    Mod.LogInfo(currentEntity);
-                    if (currentEntity == default(Entity))
-                    {
-                        Mod.LogInfo("102");
-                        EntityManager.SetComponentData<CPosition>(desiredEntity, currentLayoutPosition);
-                    } 
-                    else
-                    {
-                        Mod.LogInfo("103");
-                        Mod.LogInfo(desiredEntity);
-                        Mod.LogInfo(currentLayoutPosition);
-                        EntityManager.SetComponentData<CPosition>(desiredEntity, currentLayoutPosition);
-                        Mod.LogInfo("104");
-                        EntityManager.SetComponentData<CPosition>(currentEntity, desiredEntityPosition);
-                    }
-                    Mod.LogInfo("11");
-                    gameApplianceCodes.RemoveAt(desiredEntityListLocation);
-                    plannerApplianceCodes.RemoveAt(0);
+            Quaternion RotStrToRotation(string rotation)
+            {
+                switch (rotation)
+                {
+                    case "d":
+                        return Orientation.Down.ToRotation();
+                    case "l":
+                        return Orientation.Left.ToRotation();
+                    case "r":
+                        return Orientation.Right.ToRotation();
+                    default:
+                        return Orientation.Up.ToRotation();
                 }
             }
         }

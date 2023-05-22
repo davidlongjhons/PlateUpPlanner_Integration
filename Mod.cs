@@ -67,11 +67,7 @@ namespace PlateUpPlannerIntegration
             PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
             PrefManager
                 .AddLabel("Planner Integration")
-                .AddButton("Export Current", delegate (int _)
-                {
-                    LayoutExporter.RequestExport();
-                })
-                .AddButton("Import Menu", delegate (int _)
+                .AddButton("Open Menu", delegate (int _)
                 {
                     ImportGUIManager.Show();
                 });

@@ -105,9 +105,16 @@ namespace PlateUpPlannerIntegration
                 stretchWidth = true,
                 fontSize = 20
             };
-            GUILayout.Label("PlateUp Planner Integration Import Menu", _headerStyle, GUILayout.ExpandWidth(true));
+            GUILayout.Label("PlateUp Planner Integration Menu", _headerStyle, GUILayout.ExpandWidth(true));
 
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, false, true, GUIStyle.none, GUI.skin.verticalScrollbar);
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Export Current", GUILayout.ExpandWidth(true)))
+            {
+                LayoutExporter.RequestExport();
+            }
+            GUILayout.EndHorizontal();
 
             GUILayout.Label("Copy your entire planner link in the text area below (https://plateupplanner.github.io/workspace#...");
 
@@ -154,13 +161,6 @@ namespace PlateUpPlannerIntegration
                 {
                     LayoutImporter.RequestStaticImport();
                 }
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Location", GUILayout.ExpandWidth(true)))
-            {
-                LayoutImporter.RequestLocationCheck();
             }
             GUILayout.EndHorizontal();
 
