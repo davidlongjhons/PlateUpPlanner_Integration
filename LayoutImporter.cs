@@ -115,7 +115,7 @@ namespace PlateUpPlannerIntegration
                 var plannerApplianceRotations = ImportExportHelpers.GetPlannerRotationsList(plannerAppliancesString);
                 //list of appliances as game codes, for more info see https://github.com/KitchenMods/KitchenLib/blob/master/KitchenLib/src/References/GDOReferences.cs 
                 var plannerApplianceCodes = ImportExportHelpers.GetPlannerApplianceCodes(plannerApplianceList);
-                for (float i = bounds.max.z; i >= bounds.min.z - 2; i--)
+                for (float i = bounds.max.z; i >= bounds.min.z; i--)
                 {
                     for (float j = bounds.min.x; j <= bounds.max.x; j++)
                     {
@@ -173,6 +173,11 @@ namespace PlateUpPlannerIntegration
 
         protected void Import()
         {
+            RequestImportCheck();
+            if (GetImportCheckStatus() == false)
+            {
+                return;
+            }
             var bounds = base.Bounds;
             int width = (int)(bounds.max.x - bounds.min.x + 1);
 
@@ -249,7 +254,7 @@ namespace PlateUpPlannerIntegration
             //extract game codes from the game
             Mod.LogInfo("sorry");
             var gameApplianceCodes = new List<int>();
-            for (float i = bounds.max.z; i >= bounds.min.z; i--)
+            for (float i = bounds.max.z; i >= bounds.min.z - 2; i--)
             {
                 for (float j = bounds.min.x; j <= bounds.max.x; j++)
                 {
@@ -324,6 +329,7 @@ namespace PlateUpPlannerIntegration
             else
             {
                 ImportGUIManager.SetStatus(mismatches);
+                SetImportCheckStatus(false);
             }
         }
 

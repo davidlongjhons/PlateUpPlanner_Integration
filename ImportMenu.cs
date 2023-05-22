@@ -35,7 +35,7 @@ namespace PlateUpPlannerIntegration
         {
             _importStatus = newStatus;
         }
-        private static string GetStatus()
+        public static string GetStatus()
         {
             if (_importStatus == "")
             {
@@ -138,7 +138,7 @@ namespace PlateUpPlannerIntegration
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Import checks are required to use the import feature. This will make sure you do not spawn in extra appliances; if this is your goal(a creative mode of sorts), try a static import", GUILayout.Width(350));
+            GUILayout.Label("Import checks are required to use the import feature. Make sure if you have changed the planner URL or in-game appliances, you do another import check. This will make sure you do not spawn in extra appliances; if this is your goal(a creative mode of sorts), try a static import", GUILayout.Width(350));
             if (LayoutImporter.GetImportCheckStatus() == true)
             {
                 if (GUILayout.Button("Import", GUILayout.ExpandWidth(true)))
